@@ -1,21 +1,21 @@
 package main
 
 import (
-	"github.com/labstack/echo"
-	"github.com/go-xorm/xorm"
-	_ "github.com/go-sql-driver/mysql"
-	"fmt"
-	"github.com/labstack/echo/middleware"
-	"net/http"
-	"log"
-	"os"
-	"time"
 	"context"
+	"encoding/json"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-xorm/xorm"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
 	"strconv"
 	"strings"
-	"net/url"
-	"io/ioutil"
-	"encoding/json"
+	"time"
 )
 
 var (
@@ -42,7 +42,7 @@ func init() {
 }
 
 type ApiResult struct {
-	Data  interface{} 	`json:"data"`
+	Data    interface{} `json:"data"`
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
 }
@@ -72,8 +72,7 @@ func main() {
 	e.GET("/api/GetSlideShareEmbedLink", GetSlideShareEmbedLink)
 	e.GET("/api/GetSitePreference", GetSitePreference)
 
-
-	log.Fatal(e.Start(":8000"))
+	log.Fatal(e.Start(":8080"))
 }
 
 func setDbConnContext(xormDb *xorm.Engine) echo.MiddlewareFunc {
@@ -121,14 +120,14 @@ func GetSitePreference(c echo.Context) error {
 	if sitePref == nil {
 		return c.JSON(http.StatusOK, ApiResult{
 			Success: true,
-			Data: "",
+			Data:    "",
 			Message: "",
 		})
 	}
 
 	return c.JSON(http.StatusOK, ApiResult{
 		Success: true,
-		Data: sitePref,
+		Data:    sitePref,
 		Message: "",
 	})
 }
@@ -158,7 +157,7 @@ func SearchPosts(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, ApiResult{
 		Success: true,
-		Data: posts,
+		Data:    posts,
 		Message: "",
 	})
 }
@@ -190,11 +189,11 @@ func GetRecentPosts(c echo.Context) error {
 	if includeTotal != "true" {
 		return c.JSON(http.StatusOK, ApiResult{
 			Success: true,
-			Data: posts,
+			Data:    posts,
 			Message: "",
 		})
 	} else {
-		numberOfPosts, err :=  Post{}.GetNumberOfPosts(c.Request().Context())
+		numberOfPosts, err := Post{}.GetNumberOfPosts(c.Request().Context())
 
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, ApiResult{
@@ -204,15 +203,15 @@ func GetRecentPosts(c echo.Context) error {
 		}
 
 		data := struct {
-			Total int64 `json:"total"`
-			Posts []Post  `json:"posts"`
+			Total int64  `json:"total"`
+			Posts []Post `json:"posts"`
 		}{
 			numberOfPosts,
 			posts,
 		}
 		return c.JSON(http.StatusOK, ApiResult{
 			Success: true,
-			Data: data,
+			Data:    data,
 			Message: "",
 		})
 	}
@@ -231,7 +230,7 @@ func GetTagPosts(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, ApiResult{
 		Success: true,
-		Data: posts,
+		Data:    posts,
 		Message: "",
 	})
 }
@@ -250,7 +249,7 @@ func GetRandomAuthorPosts(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, ApiResult{
 		Success: true,
-		Data: posts,
+		Data:    posts,
 		Message: "",
 	})
 }
@@ -341,15 +340,15 @@ func getPostsByAuthor(c echo.Context, author *Author) error {
 	}
 
 	type AuthorPosts struct {
-		Author Author	`json:"author"`
-		Posts []Post	`json:"posts"`
+		Author Author `json:"author"`
+		Posts  []Post `json:"posts"`
 	}
 
 	return c.JSON(http.StatusOK, ApiResult{
 		Success: true,
-		Data: AuthorPosts {
+		Data: AuthorPosts{
 			Author: *author,
-			Posts: posts,
+			Posts:  posts,
 		},
 		Message: "",
 	})
@@ -359,7 +358,7 @@ func GetGoogleAd(c echo.Context) error {
 	mode := c.QueryParam("mode")
 	ads := make(map[string]SitePreference)
 
-	adKey := "ad." + mode + ".top";
+	adKey := "ad." + mode + ".top"
 	if ad, err := (SitePreference{}).GetByName(c.Request().Context(), adKey); err != nil {
 		return c.JSON(http.StatusInternalServerError, ApiResult{
 			Success: false,
@@ -369,7 +368,7 @@ func GetGoogleAd(c echo.Context) error {
 		ads[adKey] = *ad
 	}
 
-	adKey = "ad." + mode + ".middle";
+	adKey = "ad." + mode + ".middle"
 	if ad, err := (SitePreference{}).GetByName(c.Request().Context(), adKey); err != nil {
 		return c.JSON(http.StatusInternalServerError, ApiResult{
 			Success: false,
@@ -379,7 +378,7 @@ func GetGoogleAd(c echo.Context) error {
 		ads[adKey] = *ad
 	}
 
-	adKey = "ad." + mode + ".bottom";
+	adKey = "ad." + mode + ".bottom"
 	if ad, err := (SitePreference{}).GetByName(c.Request().Context(), adKey); err != nil {
 		return c.JSON(http.StatusInternalServerError, ApiResult{
 			Success: false,
@@ -391,7 +390,7 @@ func GetGoogleAd(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, ApiResult{
 		Success: true,
-		Data: ads,
+		Data:    ads,
 		Message: "",
 	})
 }
@@ -421,7 +420,7 @@ func GetPostById(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, ApiResult{
 		Success: true,
-		Data: post,
+		Data:    post,
 		Message: "",
 	})
 }
@@ -453,7 +452,7 @@ func GetPostByPermalink(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, ApiResult{
 		Success: true,
-		Data: post,
+		Data:    post,
 		Message: "",
 	})
 }
@@ -467,7 +466,7 @@ func GetPostsByCategory(c echo.Context) error {
 		})
 	}
 
-	category = url.QueryEscape(category);
+	category = url.QueryEscape(category)
 
 	term, err := Term{}.FinyBySlug(c.Request().Context(), category, "category")
 
@@ -497,7 +496,7 @@ func GetPostsByTag(c echo.Context) error {
 		})
 	}
 
-	tag = url.QueryEscape(tag);
+	tag = url.QueryEscape(tag)
 
 	term, err := Term{}.FinyBySlug(c.Request().Context(), tag, "post_tag")
 
@@ -567,7 +566,7 @@ func getPostsByTagId(c echo.Context, id int) error {
 
 	return c.JSON(http.StatusOK, ApiResult{
 		Success: true,
-		Data: posts,
+		Data:    posts,
 		Message: "",
 	})
 }
@@ -613,7 +612,7 @@ func GetSlideShareEmbedLink(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, ApiResult{
 		Success: true,
-		Data: jsonMap,
+		Data:    jsonMap,
 		Message: "",
 	})
 }
