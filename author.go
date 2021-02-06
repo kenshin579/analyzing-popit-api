@@ -1,23 +1,23 @@
 package main
 
 import (
+	"context"
+	"crypto/md5"
 	"errors"
 	"fmt"
-	"crypto/md5"
-	"context"
 )
 
 type Author struct {
-	ID int64             `json:"id"           xorm:"ID"`
-	UserLogin string     `json:"userLogin"    xorm:"user_login"`
-	DisplayName string   `json:"displayName"  xorm:"display_name"`
-	UserUrl string       `json:"userUrl"      xorm:"user_url"`
-	Avatar string        `json:"avatar"       xorm:"-"`
+	ID          int64  `json:"id"           xorm:"ID"`
+	UserLogin   string `json:"userLogin"    xorm:"user_login"`
+	DisplayName string `json:"displayName"  xorm:"display_name"`
+	UserUrl     string `json:"userUrl"      xorm:"user_url"`
+	Avatar      string `json:"avatar"       xorm:"-"`
 	//Important: Do not include in JSON because of personal data
-	Email string         `json:"-"            xorm:"user_email"`
+	Email string `json:"-"            xorm:"user_email"`
 }
 
-func (Author) TableName() (string) {
+func (Author) TableName() string {
 	return "wprdh0703_users"
 }
 
@@ -36,7 +36,7 @@ func (Author) GetOne(ctx context.Context, id int64) (*Author, error) {
 		return nil, errors.New("No Author Record")
 	}
 
-	(&author).initAvatar();
+	(&author).initAvatar()
 
 	return &author, nil
 }
@@ -56,15 +56,15 @@ func (Author) GetByLoginName(ctx context.Context, loginName string) (*Author, er
 		return nil, err
 	}
 
-	(&author).initAvatar();
+	(&author).initAvatar()
 
 	return &author, nil
 }
 
-func (a *Author)initAvatar() {
+func (a *Author) initAvatar() {
 	hash := md5.Sum([]byte(a.Email))
 	a.Avatar = fmt.Sprintf("https://www.gravatar.com/avatar/%x", hash)
-	a.Email = "";
+	a.Email = ""
 }
 
 func (Author) FindAuthorByPostCount(ctx context.Context, numPosts int) ([]Author, error) {
@@ -83,10 +83,10 @@ func (Author) FindAuthorByPostCount(ctx context.Context, numPosts int) ([]Author
 		) a
 		join wprdh0703_users b on a.post_author = b.ID
 		order by b.ID;
-  `, numPosts - 1)
+  `, numPosts-1)
 
-  if err := GetDBConn(ctx).SQL(sql).Find(&authors); err != nil {
-  	return nil, err
+	if err := GetDBConn(ctx).SQL(sql).Find(&authors); err != nil {
+		return nil, err
 	}
 
 	for i := 0; i < len(authors); i++ {

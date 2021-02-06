@@ -1,23 +1,23 @@
 package main
 
 import (
-	"fmt"
 	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/pkg/errors"
+	"io/ioutil"
 	"net/http"
 	"time"
-	"io/ioutil"
-	"encoding/json"
-	"github.com/pkg/errors"
 )
 
 type PostExternalMeta struct {
-	Id int64 `json:"id" xorm:"id"`
-	PostId int64 `json:"postId" xorm:"post_id"`
-	Name  string `json:"name" xorm:"name"`
-	Value string `json:"value" xorm:"value"`
+	Id     int64  `json:"id" xorm:"id"`
+	PostId int64  `json:"postId" xorm:"post_id"`
+	Name   string `json:"name" xorm:"name"`
+	Value  string `json:"value" xorm:"value"`
 }
 
-func (PostExternalMeta) TableName() (string) {
+func (PostExternalMeta) TableName() string {
 	return "post_external_metas"
 }
 
@@ -35,9 +35,9 @@ func (PostExternalMeta) GetByPost(ctx context.Context, postId int64) ([]PostExte
 
 // Getting Facebook Like
 type FacebookLike struct {
-	Id int64 `json:"id" xorm:"id"`
+	Id     int64 `json:"id" xorm:"id"`
 	PostId int64 `json:"postId" xorm:"post_id"`
-	Likes  int `json:"likes" xorm:"likes"`
+	Likes  int   `json:"likes" xorm:"likes"`
 }
 
 type Values struct {
@@ -83,13 +83,13 @@ func StartGetFacebookLike() {
 				}
 
 				shareCount := httpShareCount
-				if httpsShareCount  > shareCount {
+				if httpsShareCount > shareCount {
 					shareCount = httpsShareCount
 				}
 
 				if shareCount == 0 {
 					fmt.Println("==> Like is zero:", post.PostName)
-					continue;
+					continue
 				}
 
 				err = post.UpdateFacebookLike(ctx, shareCount)
@@ -102,10 +102,10 @@ func StartGetFacebookLike() {
 		}
 	}()
 }
-func getFacebookLike(ctx context.Context, post Post, protocol string) (int, error){
+func getFacebookLike(ctx context.Context, post Post, protocol string) (int, error) {
 	facebookAPI := "https://graph.facebook.com/?ids="
 	postLink := post.PostName
-	if postLink[len(postLink) - 1] != '/' {
+	if postLink[len(postLink)-1] != '/' {
 		postLink = postLink + "/"
 	}
 	postAPI := fmt.Sprintf(`%v%v://www.popit.kr/%v`, facebookAPI, protocol, postLink)

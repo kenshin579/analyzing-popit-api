@@ -1,81 +1,81 @@
 package main
 
 import (
-	"time"
-	"math/rand"
-	"unicode/utf8"
-	"strings"
 	"context"
-	"strconv"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/wulijun/go-php-serialize/phpserialize"
 	"golang.org/x/net/html"
 	"io/ioutil"
-	"encoding/json"
-	"net/url"
+	"math/rand"
 	"net/http"
-	"errors"
-	"github.com/wulijun/go-php-serialize/phpserialize"
+	"net/url"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+	"unicode/utf8"
 )
 
 const (
-	MAX_AUTHORS = 5
+	MAX_AUTHORS           = 5
 	MAX_DESCRIPTION_CHARS = 600
 )
 
 type Post struct {
-	ID int64 					   `json:"id"            xorm:"ID"`
-	AuthorID int64       `json:"-"             xorm:"post_author"`
-	Author Author  	     `json:"author"        xorm:"-"`
-	Content string           `json:"content"       xorm:"post_content"`
-	Title string             `json:"title"         xorm:"post_title"`
-	PostDate time.Time       `json:"date"          xorm:"post_date"`
-	PostName string          `json:"postName"      xorm:"post_name"`
-	PostExcerpt string       `json:"-"             xorm:"post_excerpt"`
-	Guid string              `json:"-"             xorm:"guid"`
-	Image string             `json:"image"         xorm:"-"`
-	MediumImage string       `json:"mediumImage"   xorm:"-"`
-	ThumbnailImage string    `json:"thumbnailImage" xorm:"-"`
-	SocialTitle string       `json:"socialTitle"   xorm:"-"`
-	SocialDesc string        `json:"socialDesc"    xorm:"-"`
-	Categories []Term        `json:"categories"    xorm:"-"`
-	Tags []Term              `json:"tags"          xorm:"-"`
-	Metas []PostExternalMeta `json:"metas"         xorm:"-"`
-	HighlightedText string   `json:"highlightedText" xorm:"-"`
+	ID              int64              `json:"id"            xorm:"ID"`
+	AuthorID        int64              `json:"-"             xorm:"post_author"`
+	Author          Author             `json:"author"        xorm:"-"`
+	Content         string             `json:"content"       xorm:"post_content"`
+	Title           string             `json:"title"         xorm:"post_title"`
+	PostDate        time.Time          `json:"date"          xorm:"post_date"`
+	PostName        string             `json:"postName"      xorm:"post_name"`
+	PostExcerpt     string             `json:"-"             xorm:"post_excerpt"`
+	Guid            string             `json:"-"             xorm:"guid"`
+	Image           string             `json:"image"         xorm:"-"`
+	MediumImage     string             `json:"mediumImage"   xorm:"-"`
+	ThumbnailImage  string             `json:"thumbnailImage" xorm:"-"`
+	SocialTitle     string             `json:"socialTitle"   xorm:"-"`
+	SocialDesc      string             `json:"socialDesc"    xorm:"-"`
+	Categories      []Term             `json:"categories"    xorm:"-"`
+	Tags            []Term             `json:"tags"          xorm:"-"`
+	Metas           []PostExternalMeta `json:"metas"         xorm:"-"`
+	HighlightedText string             `json:"highlightedText" xorm:"-"`
 }
 
 type SearchResult struct {
 	TotalHits int `json:"totalHits"`
 	Posts     []struct {
-		ID              int         `json:"id"`
-		HighlightedText string      `json:"highlightedText"`
+		ID              int    `json:"id"`
+		HighlightedText string `json:"highlightedText"`
 	} `json:"posts"`
 }
 
-func (Post) TableName() (string) {
+func (Post) TableName() string {
 	return "wprdh0703_posts"
 }
 
 type TermPosts struct {
-	Term Term    `json:"term"`
+	Term  Term   `json:"term"`
 	Posts []Post `json:"posts"`
 }
 
 type AuthorPosts struct {
-	Author Author    `json:"author"`
-	Posts []Post     `json:"posts"`
+	Author Author `json:"author"`
+	Posts  []Post `json:"posts"`
 }
 
 type PostMeta struct {
-	Key string `xorm:"meta_key"`
+	Key   string `xorm:"meta_key"`
 	Value string `xorm:"meta_value"`
 }
 
-func (PostMeta) TableName() (string) {
+func (PostMeta) TableName() string {
 	return "wprdh0703_postmeta"
 }
 
-func (p Post)Search(ctx context.Context, keyword string, page int) ([]Post, error) {
+func (p Post) Search(ctx context.Context, keyword string, page int) ([]Post, error) {
 	encodedKeyword := &url.URL{Path: fmt.Sprintf(`%v`, keyword)}
 	searchAPI := fmt.Sprintf(`http://127.0.0.1:8099/api/search/%v?page=%v`, encodedKeyword.String(), page)
 
@@ -144,7 +144,7 @@ func (p Post)Search(ctx context.Context, keyword string, page int) ([]Post, erro
 	return orderedPosts, nil
 }
 
-func (Post)GetPostById(ctx context.Context, postId int64) (*Post, error) {
+func (Post) GetPostById(ctx context.Context, postId int64) (*Post, error) {
 	post := &Post{}
 
 	has, err := GetDBConn(ctx).
@@ -172,7 +172,7 @@ func (Post)GetPostById(ctx context.Context, postId int64) (*Post, error) {
 	return post, nil
 }
 
-func (Post)GetPostsByIds(ctx context.Context, postIds []int64, postType string) ([]Post, error) {
+func (Post) GetPostsByIds(ctx context.Context, postIds []int64, postType string) ([]Post, error) {
 	var posts []Post
 
 	postStatus := "publish"
@@ -194,7 +194,7 @@ func (Post)GetPostsByIds(ctx context.Context, postIds []int64, postType string) 
 	return loadPostAssoications(ctx, posts)
 }
 
-func (Post)GetByPermalink(ctx context.Context, permalink string) (*Post, error) {
+func (Post) GetByPermalink(ctx context.Context, permalink string) (*Post, error) {
 	post := &Post{}
 
 	has, err := GetDBConn(ctx).
@@ -291,7 +291,7 @@ func (p *Post) processSpecialElement(ctx context.Context) {
 			}
 			processedContent += prefix + fmt.Sprintf("[gallery columns=%v size=%v images=\"%v\" captions=\"%v\"]",
 				columns, size, strings.Join(images, ","), strings.Join(postExcerpts, ","))
-		}	else {
+		} else {
 			processedContent += prefix + line
 		}
 		prefix = "\n"
@@ -300,7 +300,7 @@ func (p *Post) processSpecialElement(ctx context.Context) {
 	p.Content = processedContent
 }
 
-func (Post)GetRecent(ctx context.Context, page int, pageSize int) ([]Post, error) {
+func (Post) GetRecent(ctx context.Context, page int, pageSize int) ([]Post, error) {
 	var posts []Post
 
 	offset := (page - 1) * pageSize
@@ -320,7 +320,7 @@ func (Post)GetRecent(ctx context.Context, page int, pageSize int) ([]Post, error
 	return loadPostAssoications(ctx, posts)
 }
 
-func (Post)GetNumberOfPosts(ctx context.Context) (int64, error) {
+func (Post) GetNumberOfPosts(ctx context.Context) (int64, error) {
 	var post Post
 	return GetDBConn(ctx).
 		Where("post_status = 'publish'").
@@ -336,7 +336,7 @@ func loadPostAssoications(ctx context.Context, posts []Post) ([]Post, error) {
 			return nil, err
 		}
 
-		eachPost.Content = "";	//truncate to reduce size
+		eachPost.Content = "" //truncate to reduce size
 
 		loadedPosts = append(loadedPosts, eachPost)
 	}
@@ -353,7 +353,7 @@ func (p *Post) loadAssociations(ctx context.Context) error {
 	}
 
 	if err := p.loadCategoriesAndTerms(ctx); err != nil {
-		return err;
+		return err
 	}
 
 	if extraMetas, err := (PostExternalMeta{}).GetByPost(ctx, p.ID); err != nil {
@@ -365,7 +365,7 @@ func (p *Post) loadAssociations(ctx context.Context) error {
 	return nil
 }
 
-func (p Post)GetRandomPostsByTerm(ctx context.Context, isMobile bool) ([]TermPosts, error) {
+func (p Post) GetRandomPostsByTerm(ctx context.Context, isMobile bool) ([]TermPosts, error) {
 	terms, err := Term{}.CountTerm(ctx)
 	if err != nil {
 		return nil, err
@@ -379,7 +379,7 @@ func (p Post)GetRandomPostsByTerm(ctx context.Context, isMobile bool) ([]TermPos
 	}
 
 	if numTerms < MAX_AUTHORS {
-		numResults = numTerms;
+		numResults = numTerms
 	}
 
 	termPostsArray := make([]TermPosts, 0)
@@ -402,13 +402,13 @@ func (p Post)GetRandomPostsByTerm(ctx context.Context, isMobile bool) ([]TermPos
 	}
 
 	for index, _ := range selectedIndexes {
-		posts, err := p.getTermPosts(ctx, terms[index].Term.ID, "", "RAND()", true,1, pageSize)
+		posts, err := p.getTermPosts(ctx, terms[index].Term.ID, "", "RAND()", true, 1, pageSize)
 		if err != nil {
 			return nil, err
 		}
 
-		termPosts := 	TermPosts{
-			Term: terms[index].Term,
+		termPosts := TermPosts{
+			Term:  terms[index].Term,
 			Posts: posts,
 		}
 		termPostsArray = append(termPostsArray, termPosts)
@@ -417,7 +417,7 @@ func (p Post)GetRandomPostsByTerm(ctx context.Context, isMobile bool) ([]TermPos
 	return termPostsArray, nil
 }
 
-func (Post)getTermPosts(ctx context.Context, termId int,
+func (Post) getTermPosts(ctx context.Context, termId int,
 	where string, orderBy string, loadAssociation bool, page int, pageSize int) ([]Post, error) {
 	var posts []Post
 
@@ -455,7 +455,7 @@ func (Post)getTermPosts(ctx context.Context, termId int,
 	}
 }
 
-func (p Post)GetByAuthor(ctx context.Context, authorId int64, excludes []int, page int, pageSize int) ([]Post, error) {
+func (p Post) GetByAuthor(ctx context.Context, authorId int64, excludes []int, page int, pageSize int) ([]Post, error) {
 	idList := ""
 	prefix := ""
 	for _, eachId := range excludes {
@@ -476,7 +476,7 @@ func (p Post)GetByAuthor(ctx context.Context, authorId int64, excludes []int, pa
 	return posts, nil
 }
 
-func (p Post)GetRandomPostsByAuthor(ctx context.Context, isMobile bool) ([]AuthorPosts, error) {
+func (p Post) GetRandomPostsByAuthor(ctx context.Context, isMobile bool) ([]AuthorPosts, error) {
 	authors, err := Author{}.FindAuthorByPostCount(ctx, 2)
 	if err != nil {
 		return nil, err
@@ -489,7 +489,7 @@ func (p Post)GetRandomPostsByAuthor(ctx context.Context, isMobile bool) ([]Autho
 		numResults = 3
 	}
 	if numAuthors < MAX_AUTHORS {
-		numResults = numAuthors;
+		numResults = numAuthors
 	}
 
 	authorPostsArray := make([]AuthorPosts, 0)
@@ -513,7 +513,7 @@ func (p Post)GetRandomPostsByAuthor(ctx context.Context, isMobile bool) ([]Autho
 		}
 		authorPosts := AuthorPosts{
 			Author: authors[index],
-			Posts: posts,
+			Posts:  posts,
 		}
 
 		authorPostsArray = append(authorPostsArray, authorPosts)
@@ -522,7 +522,7 @@ func (p Post)GetRandomPostsByAuthor(ctx context.Context, isMobile bool) ([]Autho
 	return authorPostsArray, nil
 }
 
-func (Post)getAuthorPosts(ctx context.Context, authorId int64, where string, orderBy string, page int, pageSize int) ([]Post, error) {
+func (Post) getAuthorPosts(ctx context.Context, authorId int64, where string, orderBy string, page int, pageSize int) ([]Post, error) {
 	var posts []Post
 
 	offset := (page - 1) * pageSize
@@ -552,7 +552,7 @@ func (Post)getAuthorPosts(ctx context.Context, authorId int64, where string, ord
 	return loadedPosts, nil
 }
 
-func (p Post)GetByTag(ctx context.Context, tagId int, excludeIds []int, page int, pageSize int) ([]Post, error) {
+func (p Post) GetByTag(ctx context.Context, tagId int, excludeIds []int, page int, pageSize int) ([]Post, error) {
 	idList := ""
 	prefix := ""
 	for _, eachId := range excludeIds {
@@ -572,7 +572,7 @@ func (p Post)GetByTag(ctx context.Context, tagId int, excludeIds []int, page int
 	return posts, nil
 }
 
-func (p *Post)loadAuthor(ctx context.Context) error {
+func (p *Post) loadAuthor(ctx context.Context) error {
 	if author, err := (Author{}).GetOne(ctx, p.AuthorID); err != nil {
 		return err
 	} else {
@@ -582,12 +582,12 @@ func (p *Post)loadAuthor(ctx context.Context) error {
 	return nil
 }
 
-func (p *Post)loadMeta(ctx context.Context) error {
+func (p *Post) loadMeta(ctx context.Context) error {
 	var postMetas []PostMeta
 	err := GetDBConn(ctx).Table("wprdh0703_postmeta").
-			Where("post_id = ?", p.ID).
-			In("meta_key", "post_image", "_aioseop_description", "_aioseop_title", "_thumbnail_id").
-			Find(&postMetas)
+		Where("post_id = ?", p.ID).
+		In("meta_key", "post_image", "_aioseop_description", "_aioseop_title", "_thumbnail_id").
+		Find(&postMetas)
 
 	if err != nil {
 		return err
@@ -629,7 +629,7 @@ func (p *Post)loadMeta(ctx context.Context) error {
 	return nil
 }
 
-func (p *Post)setThumbnailImage(ctx context.Context, thumbnailId string) {
+func (p *Post) setThumbnailImage(ctx context.Context, thumbnailId string) {
 	if len(thumbnailId) == 0 {
 		return
 	}
@@ -644,21 +644,21 @@ func (p *Post)setThumbnailImage(ctx context.Context, thumbnailId string) {
 		return
 	}
 
-	var  decodeRes interface{}
+	var decodeRes interface{}
 
 	if decodeRes, err = phpserialize.Decode(postMeta.Value); err != nil {
 		fmt.Errorf("decode data fail %v, %v", err, postMeta.Value)
 		return
 	}
 
-	imageMeta, ok := decodeRes.(map[interface {}]interface {})
+	imageMeta, ok := decodeRes.(map[interface{}]interface{})
 	if !ok {
 		return
 	}
 	imagePath, _ := filepath.Split(fmt.Sprintf("/wp-content/uploads/%v", imageMeta["file"].(string)))
 
 	sizes := imageMeta["sizes"]
-	sizesMap, ok := sizes.(map[interface {}]interface{})
+	sizesMap, ok := sizes.(map[interface{}]interface{})
 	if !ok {
 		return
 	}
@@ -676,7 +676,7 @@ func (p *Post)setThumbnailImage(ctx context.Context, thumbnailId string) {
 	p.MediumImage = "https://www.popit.kr/" + imagePath + mediumMap["file"].(string)
 }
 
-func (p *Post)getDescriptionFromContents() string {
+func (p *Post) getDescriptionFromContents() string {
 	htmlToken := html.NewTokenizer(strings.NewReader(p.Content))
 	socialDescText := ""
 	isPreTag := false
@@ -723,7 +723,7 @@ func (p *Post)getDescriptionFromContents() string {
 	return strings.TrimSpace(socialDescText)
 }
 
-func (p *Post)loadCategoriesAndTerms(ctx context.Context) error {
+func (p *Post) loadCategoriesAndTerms(ctx context.Context) error {
 	var terms []Term
 
 	terms, err := (&Term{}).FindByPost(ctx, p.ID)
@@ -748,7 +748,7 @@ func (p *Post)loadCategoriesAndTerms(ctx context.Context) error {
 	return nil
 }
 
-func (p *Post)UpdateFacebookLike(ctx context.Context, likes int) error {
+func (p *Post) UpdateFacebookLike(ctx context.Context, likes int) error {
 	var facebookLike FacebookLike
 	has, err := GetDBConn(ctx).Where("post_id = ?", p.ID).Get(&facebookLike)
 	if err != nil {
@@ -773,4 +773,3 @@ func (p *Post)UpdateFacebookLike(ctx context.Context, likes int) error {
 	}
 	return nil
 }
-
