@@ -55,7 +55,7 @@ func main() {
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
-	e.Use(setDbConnContext(xormDb))
+	e.Use(setDbConnContext(xormDb)) //todo : 항상 api 호출시 db 연결이 필요한 거는 아님
 
 	e.GET("/api/Search", SearchPosts)
 	e.GET("/api/RecentPosts", GetRecentPosts)
