@@ -7,7 +7,7 @@ services:
     environment:
     - MYSQL_ROOT_PASSWORD=password
     - MYSQL_DATABASE=app_popit_api
-    - MYSQL_USER=app
+    - MYSQL_USER=mybatis
     - MYSQL_PASSWORD=password
     - TZ=Asia/Seoul
     volumes:
